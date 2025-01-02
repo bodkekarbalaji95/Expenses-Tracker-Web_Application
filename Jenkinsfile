@@ -1,45 +1,71 @@
 pipeline {
-  agent {
-    docker {
-      image 'bodkekarbalaji95/maven-balaji-docker-agent:v1'
-      args '--user root -v /var/run/docker.sock:/var/run/docker.sock'  // This mounts the Docker socket
-    }
-  }
+    agent any
 
-  stages {
-    stage('Checkout') {
-      steps {
-        sh 'echo passwd'
-      //  git branch: 'main', url: 'https://github.com/bodkekarbalaji95/Expenses-Tracker-Web_Application.git'
-      }
+    environment {
+        DOCKER_IMAGE = 'snehcreate/expensetracker_v3'  // Docker image for your Spring Boot app
+        DOCKER_TAG = 'latest'
+        DOCKER_REGISTRY = 'docker.io'
+        DOCKER_CREDENTIALS = 'docker-credentials'  // Replace with your Jenkins Docker credentials ID
     }
 
-    stage('Build and Test') {
-      steps {
-        sh 'mvn clean package'
-      }
-    }
-
-    stage('Build and Push Docker Image') {
-      environment {
-        DOCKER_IMAGE = "bodkekarbalaji95/expenses_tracker:${BUILD_NUMBER}"
-        REGISTRY_CREDENTIALS = credentials('docker-cred')
-      }
-      steps {
-        script {
-          sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && docker build -t ${DOCKER_IMAGE} .'
-          def dockerImage = docker.image("${DOCKER_IMAGE}")
-          docker.withRegistry('https://index.docker.io/v1/', "docker-cred") {
-            dockerImage.push()
-          }
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout the code from your repository
+                checkout scm
+            }
         }
-      }
-    }
-  }
 
-  post {
-    always {
-      cleanWs()  // This step is inside the post block, which should be valid now.
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build the Docker image for the Spring Boot application
+                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                }
+            }
+        }
+
+        stage('Docker Compose Up') {
+            steps {
+                script {
+                    // Run Docker Compose to start both the Spring Boot app and MySQL container
+                    sh 'docker-compose up -d'
+                }
+            }
+        }
+
+        stage('Login to Docker Registry') {
+            steps {
+                script {
+                    // Login to Docker registry using the credentials
+                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin ${DOCKER_REGISTRY}"
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    // Push the Docker image to the registry
+                    sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                }
+            }
+        }
+        
+        stage('Clean up Docker Containers') {
+            steps {
+                script {
+                    // Clean up the containers to avoid buildup
+                    sh 'docker-compose down'
+                }
+            }
+        }
     }
-  }
-}
+
+    post {
+        always {
+            // Remove the image locally after build and push
+            sh "docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true"
+        }
