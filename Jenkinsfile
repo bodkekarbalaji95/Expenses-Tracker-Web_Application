@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE = 'snehcreate/expensetracker_v3'  // Docker image for your Spring Boot app
         DOCKER_TAG = 'latest'
         DOCKER_REGISTRY = 'docker.io'
-        DOCKER_CREDENTIALS = 'docker-credentials'  // Replace with your Jenkins Docker credentials ID
+        DOCKER_CREDENTIALS = 'docker-cred'  // Replace with your Jenkins Docker credentials ID
     }
 
     stages {
