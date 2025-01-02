@@ -69,3 +69,5 @@ pipeline {
             // Remove the image locally after build and push
             sh "docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true"
         }
+    }
+}
