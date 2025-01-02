@@ -9,7 +9,8 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        git branch: 'main', url: 'https://github.com/bodkekarbalaji95/Expenses-Tracker-Web_Application.git'
+        sh 'echo passwd'
+      //  git branch: 'main', url: 'https://github.com/bodkekarbalaji95/Expenses-Tracker-Web_Application.git'
       }
     }
 
