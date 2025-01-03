@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'dev-server' }
+    agent any
 
     environment {
         DOCKER_IMAGE = 'snehcreate/expensetracker_v3'  // Docker image for the Spring Boot app
