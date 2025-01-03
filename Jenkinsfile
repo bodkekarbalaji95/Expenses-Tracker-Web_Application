@@ -1,64 +1,57 @@
+@Library('Shared')_
 pipeline {
-    agent any
+    agent { label 'dev-server' }
 
     environment {
-        DOCKER_IMAGE = 'snehcreate/expensetracker_v3'  // Docker image for your Spring Boot app
+        DOCKER_IMAGE = 'snehcreate/expensetracker_v3'  // Docker image for the Spring Boot app
         DOCKER_TAG = 'latest'
         DOCKER_REGISTRY = 'docker.io'
-        DOCKER_CREDENTIALS = 'docker-cred'  // Replace with your Jenkins Docker credentials ID
+        DOCKER_CREDENTIALS = 'docker-cred'  // Docker credentials ID in Jenkins
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                // Checkout the code from your repository
-                checkout scm
-            }
-        }
-
-        stage('Build Docker Image') {
+        stage("Checkout") {
             steps {
                 script {
-                    // Build the Docker image for the Spring Boot application
-                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                    echo "Cloning the repository..."
+                    clone("https://github.com/bodkekarbalaji95/Expenses-Tracker-Web_Application.git", "main")
                 }
             }
         }
 
-        stage('Docker Compose Up') {
+        stage("Build Docker Image") {
             steps {
                 script {
-                    // Run Docker Compose to start both the Spring Boot app and MySQL container
-                    sh 'docker-compose up -d'
+                    echo "Building Docker image..."
+                    dockerbuild(DOCKER_IMAGE, DOCKER_TAG)
                 }
             }
         }
 
-        stage('Login to Docker Registry') {
+        stage("Push to DockerHub") {
             steps {
                 script {
-                    // Login to Docker registry using the credentials
-                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin ${DOCKER_REGISTRY}"
-                    }
+                    echo "Pushing Docker image to DockerHub..."
+                    dockerpush(DOCKER_CREDENTIALS, DOCKER_IMAGE, DOCKER_TAG)
                 }
             }
         }
 
-        stage('Push Docker Image') {
+        stage("Deploy Application") {
             steps {
                 script {
-                    // Push the Docker image to the registry
-                    sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                    echo "Deploying application..."
+                    deploy()
                 }
             }
         }
-        
-        stage('Clean up Docker Containers') {
+
+        stage("Clean Up") {
             steps {
                 script {
-                    // Clean up the containers to avoid buildup
-                    sh 'docker-compose down'
+                    echo "Cleaning up Docker resources..."
+                    sh 'docker-compose down || true'
+                    sh "docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true"
                 }
             }
         }
@@ -66,8 +59,8 @@ pipeline {
 
     post {
         always {
-            // Remove the image locally after build and push
-            sh "docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true"
+            echo "Pipeline execution completed. Cleaning up workspace..."
+            cleanWs()
         }
     }
 }
