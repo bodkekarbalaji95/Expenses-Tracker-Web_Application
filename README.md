@@ -15,7 +15,7 @@ The Expenses Tracker App is robust financial management solution developed using
 - Spring MVC
 - Spring Security
 - Spring Data (JPA)
-- MySQL
+- MySQL DB
 - Thymeleaf
 - Bootstrap
 
