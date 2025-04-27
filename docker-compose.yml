@@ -9,7 +9,7 @@ services:
     volumes:
       - ./mysql-data:/var/lib/mysql
     networks:
-      - appbridge
+      - trade_appbridge
     healthcheck:
       test: ["CMD","mysqladmin","ping","-h","localhost","-uroot","-pTest@123"]
       interval: 10s
@@ -28,7 +28,7 @@ services:
     ports:
       - "8081:8081"
     networks:
-      - appbridge
+      - trade_appbridge
     depends_on:
       - mysql
     restart: always
