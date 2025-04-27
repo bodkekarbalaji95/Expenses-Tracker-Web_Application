@@ -34,7 +34,7 @@ services:
     restart: always
 
 networks:
-  appbridge:
+  trade_appbridge:
 
 volumes:
   mysql-data:
